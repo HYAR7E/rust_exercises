@@ -1,23 +1,22 @@
-use std::io::prelude::*;
-use std::io::{self, BufReader};
+use std::io::{prelude::*, BufReader, Result};
 use std::net::{TcpListener, TcpStream};
 
-fn handle_client(stream: TcpStream) -> Result<(), io::Error> {
-    let mut writer = stream.try_clone()?;
-    let reader = BufReader::new(stream);
+fn handle_client(mut stream: TcpStream) -> Result<()> {
+    let reader = BufReader::new(stream.try_clone()?);
     for line in reader.lines() {
         let line = line?;
-        println!("Received: {}", line);
-        let line = format!(">> {}\n", line);
-        writer.write_all(line.as_bytes())?;
+        stream.write_all(format!("-> {line}\n").as_bytes())?;
     }
     Ok(())
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:7878")?;
     for stream in listener.incoming() {
-        handle_client(stream?)?;
+        match handle_client(stream?) {
+            Ok(_) => {}
+            Err(e) => eprintln!("Error on stream: {e}"),
+        }
     }
     Ok(())
 }
